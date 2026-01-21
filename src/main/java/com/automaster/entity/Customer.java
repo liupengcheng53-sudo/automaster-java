@@ -35,11 +35,23 @@ public class Customer {
     private String contactInfo;
 
     /** 备注：对应前端notes */
-    @Column(name = "remark", length = 2000)
+    @Column(name = "notes", length = 2000)
     private String notes; // 字段名改为notes，和前端一致
 
     /** 录入时间：对应前端dateAdded */
     @Column(name = "date_added", nullable = false, updatable = false)
     @CreationTimestamp
     private Date dateAdded; // 字段名改为dateAdded，和前端一致
+
+    /** 客户来源：网络、门店、转介绍等 */
+    @Column(name = "source", length = 50)
+    private String source;
+
+    /** 客户状态：ACTIVE-正常，BLACKLIST-黑名单 */
+    @Column(name = "status", length = 20, nullable = false, columnDefinition = "varchar(20) default 'ACTIVE'")
+    private String status;
+
+    /** 内部备注（后端使用） */
+    @Column(name = "remark", length = 2000)
+    private String remark;
 }

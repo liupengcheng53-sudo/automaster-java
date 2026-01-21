@@ -85,7 +85,7 @@ public class CustomerController {
             summary = "查询未购车客户",
             description = "默认返回最新10个未购车客户（无购车订单），支持按姓名模糊搜索未购车客户",
             parameters = {
-                    @Parameter(name = "name", description = "客户姓名（模糊搜索，可为空）", required = false,
+                    @Parameter(name = "keyword", description = "搜索关键词（姓名或手机号，可为空）", required = false,
                             example = "李四", schema = @Schema(type = "string"))
             },
             responses = {
@@ -96,10 +96,10 @@ public class CustomerController {
             }
     )
     public ResponseEntity<List<Customer>> getUnpurchasedCustomers(
-            @Parameter(description = "客户姓名（模糊搜索，可为空）")
-            @RequestParam(required = false) String name
+            @Parameter(description = "搜索关键词（姓名或手机号，可为空）")
+            @RequestParam(required = false) String keyword
     ) {
-        List<Customer> customers = customerService.searchUnpurchasedCustomers(name);
+        List<Customer> customers = customerService.searchUnpurchasedCustomers(keyword);
         return customers.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(customers);
     }
 
