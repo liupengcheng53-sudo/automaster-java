@@ -101,4 +101,46 @@ public class TransactionServiceImpl implements TransactionService {
     public Optional<Transaction> getTransactionById(String id) {
         return transactionRepository.findById(id);
     }
+
+    @Override
+    @Transactional
+    public Transaction completeTransaction(String id, Integer finalPrice) {
+        // 1. 查询交易记录
+        Optional<Transaction> transactionOptional = transactionRepository.findById(id);
+        if (transactionOptional.isEmpty()) {
+            throw new RuntimeException("交易记录不存在");
+        }
+        Transaction transaction = transactionOptional.get();
+
+        // 2. 校验交易状态
+        if (!"PENDING".equals(transaction.getStatus())) {
+            throw new RuntimeException("只有预定状态的交易才能完成");
+        }
+
+        // 3. 更新交易信息
+        transaction.setStatus("COMPLETED");
+        transaction.setFinalPrice(finalPrice);
+        transaction.setPrice(finalPrice); // 同步更新 price 字段
+        transaction.setDate(new java.util.Date()); // 更新为实际成交时间
+
+        // 4. 更新车辆状态为 SOLD
+        Optional<Car> carOptional = carRepository.findById(transaction.getCarId());
+        if (carOptional.isPresent()) {
+            Car car = carOptional.get();
+            car.setStatus("SOLD");
+            car.setCustomerId(null); // 清空预定客户关联
+            car.setDeposit(0); // 清空定金
+            carRepository.save(car);
+            transaction.setCar(car);
+        }
+
+        // 5. 保存交易记录
+        Transaction saved = transactionRepository.save(transaction);
+
+        // 6. 关联客户信息
+        Optional<Customer> customer = customerRepository.findById(transaction.getCustomerId());
+        customer.ifPresent(saved::setCustomer);
+
+        return saved;
+    }
 }

@@ -28,4 +28,13 @@ public interface TransactionService {
      * 按ID查询交易订单
      */
     Optional<Transaction> getTransactionById(String id);
+
+    /**
+     * 完成预定交易（预定转销售）
+     * 
+     * @param id 交易ID
+     * @param finalPrice 最终成交价
+     * @return 更新后的交易记录
+     */
+    Transaction completeTransaction(String id, Integer finalPrice);
 }

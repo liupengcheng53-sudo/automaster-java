@@ -111,4 +111,31 @@ public class TransactionController {
         Optional<Transaction> transaction = transactionService.getTransactionById(id);
         return transaction.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
+
+    /**
+     * 完成预定交易（预定转销售）
+     */
+    @PutMapping("/{id}/complete")
+    @Operation(
+            summary = "完成预定交易",
+            description = "将预定状态的交易转为已完成，填写最终成交价，同时更新车辆状态为Sold",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "完成成功，返回更新后的交易记录"),
+                    @ApiResponse(responseCode = "400", description = "业务错误（如交易不是预定状态）"),
+                    @ApiResponse(responseCode = "404", description = "交易记录不存在")
+            }
+    )
+    public ResponseEntity<?> completeTransaction(
+            @Parameter(description = "交易订单ID", required = true)
+            @PathVariable String id,
+            @Parameter(description = "最终成交价（元）", required = true)
+            @RequestParam Integer finalPrice
+    ) {
+        try {
+            Transaction completed = transactionService.completeTransaction(id, finalPrice);
+            return ResponseEntity.ok(completed);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

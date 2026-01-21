@@ -41,9 +41,21 @@ public class Transaction {
     @Column(name = "type", nullable = false, length = 20)
     private String type; // 如：Sale（销售）
 
-    /** 经手人ID */
+    /** 经手人id */
     @Column(name = "handled_by_user_id", length = 36)
     private String handledByUserId;
+
+    /** 交易状态：PENDING（预定）/ COMPLETED（已完成） */
+    @Column(name = "status", length = 20)
+    private String status;
+
+    /** 定金金额（元）- 预定时使用 */
+    @Column(name = "deposit")
+    private Integer deposit;
+
+    /** 最终成交价（元）- 预定转销售时填写 */
+    @Column(name = "final_price")
+    private Integer finalPrice;
 
     // 可选：关联查询车辆/客户信息（用于前端展示）
     @Transient // 非数据库字段，仅用于返回给前端
