@@ -6,83 +6,67 @@ import lombok.NoArgsConstructor;
 
 /**
  * 仪表盘统计数据 DTO
- * 
+ *
  * @author AutoMaster Team
  * @since 1.0.0
  */
 @Data
-@AllArgsConstructor
+@NoArgsConstructor // Lombok 自动生成无参构造
+@AllArgsConstructor // 全参构造（按需保留）
 public class DashboardStats {
-    
-    /**
-     * 默认构造函数，初始化所有字段为 0
-     */
-    public DashboardStats() {
-        this.totalInventoryValue = 0L;
-        this.totalInventoryCount = 0;
-        this.totalRevenue = 0L;
-        this.totalSalesCount = 0;
-        this.totalProfit = 0L;
-        this.avgProfitRate = 0.0;
-        this.totalCustomersCount = 0;
-        this.availableCarsCount = 0;
-        this.soldCarsCount = 0;
-        this.pendingCarsCount = 0;
-        this.maintenanceCarsCount = 0;
-    }
-    
+    // 字段初始化：直接给默认值，替代手动构造的赋值逻辑
     /**
      * 库存总货值（在售+预定车辆的总价值）
      */
-    private Long totalInventoryValue;
-    
+    private Long totalInventoryValue = 0L;
+
     /**
      * 库存车辆总数
      */
-    private Integer totalInventoryCount;
-    
+    private Integer totalInventoryCount = 0;
+
     /**
      * 累计销售额
      */
-    private Long totalRevenue;
-    
+    private Long totalRevenue = 0L;
+
     /**
      * 累计销售订单数
      */
-    private Integer totalSalesCount;
-    
+    private Integer totalSalesCount = 0;
+
     /**
      * 预估总利润
      */
-    private Long totalProfit;
-    
+    private Long totalProfit = 0L;
+
     /**
      * 平均利润率（百分比）
      */
-    private Double avgProfitRate;
-    
+    private Double avgProfitRate = 0.0;
+
     /**
      * 客户总数
      */
-    private Integer totalCustomersCount;
-    
+    private Integer totalCustomersCount = 0;
+
     /**
      * 在售车辆数
      */
-    private Integer availableCarsCount;
-    
+    private Integer availableCarsCount = 0;
+
     /**
      * 已售车辆数
      */
-    private Integer soldCarsCount;
-    
+    private Integer soldCarsCount = 0;
+
     /**
      * 预定车辆数
      */
-    private Integer pendingCarsCount;
-    
+    private Integer pendingCarsCount = 0;
+
     /**
      * 整备中车辆数
      */
-    private Integer maintenanceCarsCount;
+    private Integer maintenanceCarsCount = 0;
 }

@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.extern.slf4j.Slf4j; // 新增日志注解
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -14,16 +15,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 仪表盘统计控制器
- * 提供经营数据统计接口
- * 
- * @author AutoMaster Team
- * @since 1.0.0
- */
+@Slf4j // 启用日志，需确保项目引入lombok依赖
 @RestController
 @RequestMapping("/api/dashboard")
-@CrossOrigin(origins = "*")
 @Tag(name = "Dashboard", description = "仪表盘统计接口")
 public class DashboardController {
 
@@ -61,6 +55,9 @@ public class DashboardController {
             DashboardStats stats = dashboardService.getDashboardStats();
             return ResponseEntity.ok(stats);
         } catch (Exception e) {
+            // 核心修改：打印异常栈，定位具体错误
+            log.error("获取仪表盘统计数据失败：", e);
+            // 服务端异常返回500，符合HTTP语义
             return ResponseEntity.internalServerError().build();
         }
     }
