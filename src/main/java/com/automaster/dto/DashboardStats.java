@@ -11,9 +11,25 @@ import lombok.NoArgsConstructor;
  * @since 1.0.0
  */
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
 public class DashboardStats {
+    
+    /**
+     * 默认构造函数，初始化所有字段为 0
+     */
+    public DashboardStats() {
+        this.totalInventoryValue = 0L;
+        this.totalInventoryCount = 0;
+        this.totalRevenue = 0L;
+        this.totalSalesCount = 0;
+        this.totalProfit = 0L;
+        this.avgProfitRate = 0.0;
+        this.totalCustomersCount = 0;
+        this.availableCarsCount = 0;
+        this.soldCarsCount = 0;
+        this.pendingCarsCount = 0;
+        this.maintenanceCarsCount = 0;
+    }
     
     /**
      * 库存总货值（在售+预定车辆的总价值）
