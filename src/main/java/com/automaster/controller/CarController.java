@@ -312,6 +312,61 @@ public class CarController {
     }
 
     /**
+     * 完成预定，创建销售记录
+     */
+    @PutMapping("/{id}/complete-pending")
+    @Operation(
+            summary = "完成预定订单",
+            description = "将预定车辆转为已售状态，创建销售交易记录",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "操作成功", content = @Content),
+                    @ApiResponse(responseCode = "400", description = "车辆状态不是预定或参数错误", content = @Content),
+                    @ApiResponse(responseCode = "404", description = "车辆不存在", content = @Content),
+                    @ApiResponse(responseCode = "500", description = "服务器内部错误", content = @Content)
+            }
+    )
+    public ResponseEntity<Map<String, Object>> completePending(
+            @Parameter(description = "车辆ID", required = true)
+            @PathVariable String id,
+            @Parameter(description = "最终成交价", required = true)
+            @RequestParam Integer finalPrice,
+            @Parameter(description = "处理人员ID", required = false)
+            @RequestParam(required = false) String handledByUserId
+    ) {
+        try {
+            Car car = carRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("车辆不存在"));
+            
+            // 检查车辆状态
+            if (!"PENDING".equals(car.getStatus())) {
+                return ResponseEntity.badRequest().body(Map.of("message", "只有预定状态的车辆才能完成销售"));
+            }
+            
+            // 检查最终成交价
+            if (finalPrice == null || finalPrice <= 0) {
+                return ResponseEntity.badRequest().body(Map.of("message", "请输入有效的最终成交价"));
+            }
+            
+            // 更新车辆状态为已售
+            car.setStatus("SOLD");
+            carRepository.save(car);
+            
+            // 返回成功信息，包含需要创建的交易记录数据
+            Map<String, Object> result = new HashMap<>();
+            result.put("message", "预定订单已完成销售");
+            result.put("carId", car.getId());
+            result.put("customerId", car.getCustomerId());
+            result.put("deposit", car.getDeposit());
+            result.put("finalPrice", finalPrice);
+            result.put("handledByUserId", handledByUserId);
+            
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("message", "操作失败：" + e.getMessage()));
+        }
+    }
+
+    /**
      * 将预定车辆变回在售状态
      * 删除客户和定金信息
      */
