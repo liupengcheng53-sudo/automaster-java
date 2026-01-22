@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/cars")
 @Tag(name = "车辆管理接口", description = "二手车的新增、查询、修改、删除接口，包含VIN校验、状态筛选等扩展功能")
@@ -128,7 +130,9 @@ public class CarController {
             errorResponse.put("message", "预定状态必须填写有效定金金额");
             return ResponseEntity.badRequest().body(errorResponse);
         }
-
+        if (car.getCustomerId() == null || car.getCustomerId().trim().isEmpty()) {
+            car.setCustomerId(null); // 空字符串→NULL
+        }
         // 5. 正常保存
         Car savedCar = carRepository.save(car);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedCar);
@@ -316,7 +320,10 @@ public class CarController {
         return ResponseEntity.ok(result);
     }
 
+
+
     /**
+     * *
      * 完成预定，创建销售记录
      */
     @PutMapping("/{id}/complete-pending")
@@ -342,17 +349,16 @@ public class CarController {
         try {
             Car car = carRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("车辆不存在"));
-            
+
             // 检查车辆状态
             if (!"PENDING".equals(car.getStatus())) {
                 return ResponseEntity.badRequest().body(Map.of("message", "只有预定状态的车辆才能完成销售"));
             }
-            
+
             // 检查最终成交价
             if (finalPrice == null || finalPrice <= 0) {
                 return ResponseEntity.badRequest().body(Map.of("message", "请输入有效的最终成交价"));
             }
-            
             // 更新车辆状态为已售，并清空预定信息
             car.setStatus("SOLD");
             car.setCustomerId(null);  // 清空客户关联
@@ -371,7 +377,7 @@ public class CarController {
             transaction.setFinalPrice(finalPrice);
             transaction.setHandledByUserId(handledByUserId);
             transactionRepository.save(transaction);
-            
+
             // 返回成功信息
             Map<String, Object> result = new HashMap<>();
             result.put("message", "预定订单已完成销售");
@@ -379,7 +385,7 @@ public class CarController {
             result.put("carId", car.getId());
             result.put("customerId", car.getCustomerId());
             result.put("finalPrice", finalPrice);
-            
+
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("message", "操作失败：" + e.getMessage()));
