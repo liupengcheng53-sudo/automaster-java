@@ -55,26 +55,34 @@ public class CustomerController {
      */
     @GetMapping("/search")
     @Operation(
-            summary = "按关键词搜索客户",
-            description = "按客户姓名或手机号进行模糊匹配搜索，返回所有匹配的客户信息",
+            summary = "搜索客户",
+            description = "按客户姓名或手机号进行模糊匹配搜索，按创建时间倒序，最多返回20条",
             parameters = {
-                    @Parameter(name = "keyword", description = "搜索关键词（姓名/手机号）", required = true,
+                    @Parameter(name = "keyword", description = "搜索关键词（可选，姓名/手机号）", required = false,
                             example = "张三", schema = @Schema(type = "string"))
             },
             responses = {
-                    @ApiResponse(responseCode = "200", description = "搜索成功，返回匹配的客户列表",
+                    @ApiResponse(responseCode = "200", description = "搜索成功，返回客户列表",
                             content = @Content(schema = @Schema(implementation = Customer.class))),
-                    @ApiResponse(responseCode = "204", description = "无匹配的客户数据", content = @Content),
-                    @ApiResponse(responseCode = "400", description = "参数错误（关键词为空）", content = @Content),
                     @ApiResponse(responseCode = "500", description = "服务器内部错误", content = @Content)
             }
     )
     public ResponseEntity<List<Customer>> search(
-            @Parameter(description = "搜索关键词（姓名/手机号）", required = true)
-            @RequestParam String keyword
+            @Parameter(description = "搜索关键词（可选，姓名/手机号）", required = false)
+            @RequestParam(required = false) String keyword
     ) {
-        List<Customer> customers = customerService.searchCustomers(keyword);
-        return customers.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(customers);
+        List<Customer> customers;
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            customers = customerService.searchCustomers(keyword);
+        } else {
+            customers = customerService.getAllCustomers();
+        }
+        // 按创建时间倒序，最多20条
+        customers = customers.stream()
+                .sorted((a, b) -> b.getDateAdded().compareTo(a.getDateAdded()))
+                .limit(20)
+                .toList();
+        return ResponseEntity.ok(customers);
     }
 
     /**

@@ -432,4 +432,51 @@ public class CarController {
             return ResponseEntity.status(500).body("操作失败：" + e.getMessage());
         }
     }
+
+    /**
+     * 搜索车辆（用于新建订单时的车辆选择）
+     * 返回可售状态的车辆，按创建时间倒序，最多20条
+     */
+    @GetMapping("/search")
+    @Operation(
+            summary = "搜索车辆",
+            description = "搜索可售状态的车辆，支持关键词搜索（车辆名称、VIN），按创建时间倒序，最多返回20条",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "查询成功，返回车辆列表"),
+                    @ApiResponse(responseCode = "500", description = "服务器内部错误")
+            }
+    )
+    public ResponseEntity<List<Car>> searchCars(
+            @Parameter(description = "搜索关键词（可选，搜索车辆名称或VIN）")
+            @RequestParam(required = false) String keyword
+    ) {
+        try {
+            List<Car> cars;
+            if (keyword != null && !keyword.trim().isEmpty()) {
+                // 关键词搜索：搜索车辆名称或VIN
+                String searchKey = keyword.trim().toLowerCase();
+                cars = carRepository.findAll().stream()
+                        .filter(car -> "AVAILABLE".equals(car.getStatus()))
+                        .filter(car -> {
+                            String carName = car.getYear() + " " + car.getMake() + " " + car.getModel();
+                            return carName.toLowerCase().contains(searchKey) ||
+                                   (car.getVin() != null && car.getVin().toLowerCase().contains(searchKey));
+                        })
+                        .sorted((a, b) -> b.getDateAdded().compareTo(a.getDateAdded()))
+                        .limit(20)
+                        .toList();
+            } else {
+                // 无关键词：返回所有可售车辆，按时间倒序，最多20条
+                cars = carRepository.findAll().stream()
+                        .filter(car -> "AVAILABLE".equals(car.getStatus()))
+                        .sorted((a, b) -> b.getDateAdded().compareTo(a.getDateAdded()))
+                        .limit(20)
+                        .toList();
+            }
+            return ResponseEntity.ok(cars);
+        } catch (Exception e) {
+            log.error("搜索车辆失败", e);
+            return ResponseEntity.status(500).build();
+        }
+    }
 }
