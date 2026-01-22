@@ -2,7 +2,10 @@ package com.automaster.controller;
 
 import com.automaster.dto.ErrorResponse;
 import com.automaster.entity.Car;
+import com.automaster.entity.Transaction;
 import com.automaster.repository.CarRepository;
+import com.automaster.repository.TransactionRepository;
+import org.springframework.transaction.annotation.Transactional;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -26,10 +29,12 @@ import java.util.Optional;
 public class CarController {
 
     private final CarRepository carRepository;
+    private final TransactionRepository transactionRepository;
 
     @Autowired
-    public CarController(CarRepository carRepository) {
+    public CarController(CarRepository carRepository, TransactionRepository transactionRepository) {
         this.carRepository = carRepository;
+        this.transactionRepository = transactionRepository;
     }
 
     /**
@@ -315,6 +320,7 @@ public class CarController {
      * 完成预定，创建销售记录
      */
     @PutMapping("/{id}/complete-pending")
+    @Transactional
     @Operation(
             summary = "完成预定订单",
             description = "将预定车辆转为已售状态，创建销售交易记录",
@@ -351,14 +357,26 @@ public class CarController {
             car.setStatus("SOLD");
             carRepository.save(car);
             
-            // 返回成功信息，包含需要创建的交易记录数据
+            // 创建交易记录
+            Transaction transaction = new Transaction();
+            transaction.setCarId(car.getId());
+            transaction.setCustomerId(car.getCustomerId());
+            transaction.setPrice(finalPrice);
+            transaction.setDate(new java.util.Date());
+            transaction.setType("Sale");
+            transaction.setStatus("COMPLETED");
+            transaction.setDeposit(car.getDeposit());
+            transaction.setFinalPrice(finalPrice);
+            transaction.setHandledByUserId(handledByUserId);
+            transactionRepository.save(transaction);
+            
+            // 返回成功信息
             Map<String, Object> result = new HashMap<>();
             result.put("message", "预定订单已完成销售");
+            result.put("transactionId", transaction.getId());
             result.put("carId", car.getId());
             result.put("customerId", car.getCustomerId());
-            result.put("deposit", car.getDeposit());
             result.put("finalPrice", finalPrice);
-            result.put("handledByUserId", handledByUserId);
             
             return ResponseEntity.ok(result);
         } catch (Exception e) {
