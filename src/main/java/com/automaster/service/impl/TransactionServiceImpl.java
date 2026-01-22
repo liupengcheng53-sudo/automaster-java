@@ -157,4 +157,110 @@ public class TransactionServiceImpl implements TransactionService {
 
         return saved;
     }
+
+    @Override
+    public List<Transaction> searchTransactions(String status, String orderId, String carName,
+                                               String customerInfo, Integer price,
+                                               String startDate, String endDate) {
+        // 1. 查询所有交易记录
+        List<Transaction> transactions = transactionRepository.findAll();
+        
+        // 2. 关联车辆和客户信息
+        transactions.forEach(t -> {
+            Optional<Car> car = carRepository.findById(t.getCarId());
+            car.ifPresent(t::setCar);
+            Optional<Customer> customer = customerRepository.findById(t.getCustomerId());
+            customer.ifPresent(t::setCustomer);
+        });
+        
+        // 3. 筛选数据
+        return transactions.stream()
+                .filter(t -> {
+                    // 状态筛选
+                    if (status != null && !status.isEmpty() && !status.equals(t.getStatus())) {
+                        return false;
+                    }
+                    
+                    // 订单号筛选（模糊匹配）
+                    if (orderId != null && !orderId.isEmpty() && !t.getId().toLowerCase().contains(orderId.toLowerCase())) {
+                        return false;
+                    }
+                    
+                    // 车辆名称筛选（模糊匹配）
+                    if (carName != null && !carName.isEmpty()) {
+                        if (t.getCar() == null) {
+                            return false;
+                        }
+                        String fullCarName = t.getCar().getYear() + " " + t.getCar().getMake() + " " + t.getCar().getModel();
+                        if (!fullCarName.toLowerCase().contains(carName.toLowerCase())) {
+                            return false;
+                        }
+                    }
+                    
+                    // 客户信息筛选（模糊匹配姓名或电话）
+                    if (customerInfo != null && !customerInfo.isEmpty()) {
+                        if (t.getCustomer() == null) {
+                            return false;
+                        }
+                        String fullCustomerInfo = t.getCustomer().getName() + " " + t.getCustomer().getPhone();
+                        if (!fullCustomerInfo.toLowerCase().contains(customerInfo.toLowerCase())) {
+                            return false;
+                        }
+                    }
+                    
+                    // 价格筛选（精确匹配定金或成交价）
+                    if (price != null) {
+                        boolean matchPrice = false;
+                        if ("PENDING".equals(t.getStatus())) {
+                            // 预定状态：匹配定金或价格
+                            matchPrice = (t.getDeposit() != null && t.getDeposit().equals(price)) ||
+                                       (t.getPrice() != null && t.getPrice().equals(price));
+                        } else {
+                            // 已完成状态：匹配成交价或价格
+                            matchPrice = (t.getFinalPrice() != null && t.getFinalPrice().equals(price)) ||
+                                       (t.getPrice() != null && t.getPrice().equals(price));
+                        }
+                        if (!matchPrice) {
+                            return false;
+                        }
+                    }
+                    
+                    // 日期范围筛选（支持 ISO 8601 格式：yyyy-MM-dd）
+                    if (startDate != null && !startDate.isEmpty()) {
+                        try {
+                            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
+                            java.util.Date txDate = t.getDate();
+                            java.util.Date start = sdf.parse(startDate);
+                            if (txDate.before(start)) {
+                                return false;
+                            }
+                        } catch (Exception e) {
+                            // 日期解析失败，忽略该条件
+                        }
+                    }
+                    
+                    if (endDate != null && !endDate.isEmpty()) {
+                        try {
+                            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
+                            java.util.Date txDate = t.getDate();
+                            java.util.Date end = sdf.parse(endDate);
+                            // 设置结束日期为当天 23:59:59
+                            java.util.Calendar cal = java.util.Calendar.getInstance();
+                            cal.setTime(end);
+                            cal.set(java.util.Calendar.HOUR_OF_DAY, 23);
+                            cal.set(java.util.Calendar.MINUTE, 59);
+                            cal.set(java.util.Calendar.SECOND, 59);
+                            end = cal.getTime();
+                            if (txDate.after(end)) {
+                                return false;
+                            }
+                        } catch (Exception e) {
+                            // 日期解析失败，忽略该条件
+                        }
+                    }
+                    
+                    return true;
+                })
+                .toList();
+    }
 }

@@ -41,14 +41,105 @@ public class ExportController {
     private CustomerRepository customerRepository;
 
     /**
-     * 导出所有交易订单为 Excel
+     * 导出交易订单为 Excel（支持筛选条件）
      */
     @GetMapping("/transactions")
-    @Operation(summary = "导出交易订单", description = "导出所有交易订单到 Excel 文件")
-    public ResponseEntity<byte[]> exportTransactions() {
+    @Operation(summary = "导出交易订单", description = "导出交易订单到 Excel 文件，支持筛选条件")
+    public ResponseEntity<byte[]> exportTransactions(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String orderId,
+            @RequestParam(required = false) String carName,
+            @RequestParam(required = false) String customerInfo,
+            @RequestParam(required = false) Integer price,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate
+    ) {
         try {
-            // 查询所有交易记录
+            // 查询交易记录（应用筛选条件）
             List<Transaction> transactions = transactionRepository.findAll();
+            
+            // 关联车辆和客户信息
+            transactions.forEach(t -> {
+                carRepository.findById(t.getCarId()).ifPresent(t::setCar);
+                customerRepository.findById(t.getCustomerId()).ifPresent(t::setCustomer);
+            });
+            
+            // 应用筛选条件
+            transactions = transactions.stream()
+                .filter(t -> {
+                    // 状态筛选
+                    if (status != null && !status.isEmpty() && !status.equals(t.getStatus())) {
+                        return false;
+                    }
+                    
+                    // 订单号筛选
+                    if (orderId != null && !orderId.isEmpty() && !t.getId().toLowerCase().contains(orderId.toLowerCase())) {
+                        return false;
+                    }
+                    
+                    // 车辆名称筛选
+                    if (carName != null && !carName.isEmpty()) {
+                        if (t.getCar() == null) return false;
+                        String fullCarName = t.getCar().getYear() + " " + t.getCar().getMake() + " " + t.getCar().getModel();
+                        if (!fullCarName.toLowerCase().contains(carName.toLowerCase())) {
+                            return false;
+                        }
+                    }
+                    
+                    // 客户信息筛选
+                    if (customerInfo != null && !customerInfo.isEmpty()) {
+                        if (t.getCustomer() == null) return false;
+                        String fullCustomerInfo = t.getCustomer().getName() + " " + t.getCustomer().getPhone();
+                        if (!fullCustomerInfo.toLowerCase().contains(customerInfo.toLowerCase())) {
+                            return false;
+                        }
+                    }
+                    
+                    // 价格筛选
+                    if (price != null) {
+                        boolean matchPrice = false;
+                        if ("PENDING".equals(t.getStatus())) {
+                            matchPrice = (t.getDeposit() != null && t.getDeposit().equals(price)) ||
+                                       (t.getPrice() != null && t.getPrice().equals(price));
+                        } else {
+                            matchPrice = (t.getFinalPrice() != null && t.getFinalPrice().equals(price)) ||
+                                       (t.getPrice() != null && t.getPrice().equals(price));
+                        }
+                        if (!matchPrice) return false;
+                    }
+                    
+                    // 日期范围筛选
+                    if (startDate != null && !startDate.isEmpty()) {
+                        try {
+                            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                            java.util.Date txDate = t.getDate();
+                            java.util.Date start = sdf.parse(startDate);
+                            if (txDate.before(start)) return false;
+                        } catch (Exception e) {
+                            // 忽略解析错误
+                        }
+                    }
+                    
+                    if (endDate != null && !endDate.isEmpty()) {
+                        try {
+                            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                            java.util.Date txDate = t.getDate();
+                            java.util.Date end = sdf.parse(endDate);
+                            java.util.Calendar cal = java.util.Calendar.getInstance();
+                            cal.setTime(end);
+                            cal.set(java.util.Calendar.HOUR_OF_DAY, 23);
+                            cal.set(java.util.Calendar.MINUTE, 59);
+                            cal.set(java.util.Calendar.SECOND, 59);
+                            end = cal.getTime();
+                            if (txDate.after(end)) return false;
+                        } catch (Exception e) {
+                            // 忽略解析错误
+                        }
+                    }
+                    
+                    return true;
+                })
+                .toList();
 
             // 创建工作簿
             Workbook workbook = new XSSFWorkbook();
