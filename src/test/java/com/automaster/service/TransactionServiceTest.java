@@ -151,3 +151,281 @@ class TransactionServiceTest {
         verify(transactionRepository, never()).save(any(Transaction.class));
     }
 }
+
+    // ========== 查询功能测试 ==========
+
+    @Test
+    void testSearchTransactions_WithStatus() throws Exception {
+        // 准备测试数据
+        Transaction tx1 = new Transaction();
+        tx1.setId("tx-001");
+        tx1.setCarId("car1");
+        tx1.setCustomerId("customer1");
+        tx1.setStatus("COMPLETED");
+        tx1.setPrice(200000);
+        tx1.setFinalPrice(200000);
+        tx1.setDate(new java.text.SimpleDateFormat("yyyy-MM-dd").parse("2024-01-15"));
+
+        Transaction tx2 = new Transaction();
+        tx2.setId("tx-002");
+        tx2.setCarId("car1");
+        tx2.setCustomerId("customer1");
+        tx2.setStatus("PENDING");
+        tx2.setPrice(10000);
+        tx2.setDeposit(10000);
+        tx2.setDate(new java.text.SimpleDateFormat("yyyy-MM-dd").parse("2024-02-20"));
+
+        when(transactionRepository.findAll()).thenReturn(java.util.Arrays.asList(tx1, tx2));
+        when(carRepository.findById("car1")).thenReturn(Optional.of(mockCar));
+        when(customerRepository.findById("customer1")).thenReturn(Optional.of(mockCustomer));
+
+        // 执行查询：只查询已完成的订单
+        java.util.List<Transaction> result = transactionService.searchTransactions(
+            "COMPLETED", null, null, null, null, null, null
+        );
+
+        // 验证结果
+        assertEquals(1, result.size());
+        assertEquals("tx-001", result.get(0).getId());
+        assertEquals("COMPLETED", result.get(0).getStatus());
+    }
+
+    @Test
+    void testSearchTransactions_WithOrderId() throws Exception {
+        // 准备测试数据
+        Transaction tx1 = new Transaction();
+        tx1.setId("tx-001");
+        tx1.setCarId("car1");
+        tx1.setCustomerId("customer1");
+        tx1.setStatus("COMPLETED");
+        tx1.setDate(new java.util.Date());
+
+        Transaction tx2 = new Transaction();
+        tx2.setId("tx-002");
+        tx2.setCarId("car1");
+        tx2.setCustomerId("customer1");
+        tx2.setStatus("PENDING");
+        tx2.setDate(new java.util.Date());
+
+        when(transactionRepository.findAll()).thenReturn(java.util.Arrays.asList(tx1, tx2));
+        when(carRepository.findById("car1")).thenReturn(Optional.of(mockCar));
+        when(customerRepository.findById("customer1")).thenReturn(Optional.of(mockCustomer));
+
+        // 执行查询：模糊匹配订单号
+        java.util.List<Transaction> result = transactionService.searchTransactions(
+            null, "001", null, null, null, null, null
+        );
+
+        // 验证结果
+        assertEquals(1, result.size());
+        assertEquals("tx-001", result.get(0).getId());
+    }
+
+    @Test
+    void testSearchTransactions_WithCarName() throws Exception {
+        // 准备测试数据
+        Car car1 = new Car();
+        car1.setId("car-1");
+        car1.setYear(2020);
+        car1.setMake("Toyota");
+        car1.setModel("Camry");
+
+        Car car2 = new Car();
+        car2.setId("car-2");
+        car2.setYear(2021);
+        car2.setMake("Honda");
+        car2.setModel("Accord");
+
+        Transaction tx1 = new Transaction();
+        tx1.setId("tx-001");
+        tx1.setCarId("car-1");
+        tx1.setCustomerId("customer1");
+        tx1.setStatus("COMPLETED");
+        tx1.setDate(new java.util.Date());
+
+        Transaction tx2 = new Transaction();
+        tx2.setId("tx-002");
+        tx2.setCarId("car-2");
+        tx2.setCustomerId("customer1");
+        tx2.setStatus("PENDING");
+        tx2.setDate(new java.util.Date());
+
+        when(transactionRepository.findAll()).thenReturn(java.util.Arrays.asList(tx1, tx2));
+        when(carRepository.findById("car-1")).thenReturn(Optional.of(car1));
+        when(carRepository.findById("car-2")).thenReturn(Optional.of(car2));
+        when(customerRepository.findById("customer1")).thenReturn(Optional.of(mockCustomer));
+
+        // 执行查询：模糊匹配车辆名称
+        java.util.List<Transaction> result = transactionService.searchTransactions(
+            null, null, "Camry", null, null, null, null
+        );
+
+        // 验证结果
+        assertEquals(1, result.size());
+        assertEquals("car-1", result.get(0).getCarId());
+    }
+
+    @Test
+    void testSearchTransactions_WithCustomerInfo() throws Exception {
+        // 准备测试数据
+        Customer cust1 = new Customer();
+        cust1.setId("cust-1");
+        cust1.setName("张三");
+        cust1.setPhone("13800138000");
+
+        Customer cust2 = new Customer();
+        cust2.setId("cust-2");
+        cust2.setName("李四");
+        cust2.setPhone("13900139000");
+
+        Transaction tx1 = new Transaction();
+        tx1.setId("tx-001");
+        tx1.setCarId("car1");
+        tx1.setCustomerId("cust-1");
+        tx1.setStatus("COMPLETED");
+        tx1.setDate(new java.util.Date());
+
+        Transaction tx2 = new Transaction();
+        tx2.setId("tx-002");
+        tx2.setCarId("car1");
+        tx2.setCustomerId("cust-2");
+        tx2.setStatus("PENDING");
+        tx2.setDate(new java.util.Date());
+
+        when(transactionRepository.findAll()).thenReturn(java.util.Arrays.asList(tx1, tx2));
+        when(carRepository.findById("car1")).thenReturn(Optional.of(mockCar));
+        when(customerRepository.findById("cust-1")).thenReturn(Optional.of(cust1));
+        when(customerRepository.findById("cust-2")).thenReturn(Optional.of(cust2));
+
+        // 执行查询：模糊匹配客户姓名
+        java.util.List<Transaction> result = transactionService.searchTransactions(
+            null, null, null, "张三", null, null, null
+        );
+
+        // 验证结果
+        assertEquals(1, result.size());
+        assertEquals("cust-1", result.get(0).getCustomerId());
+    }
+
+    @Test
+    void testSearchTransactions_WithPrice() throws Exception {
+        // 准备测试数据
+        Transaction tx1 = new Transaction();
+        tx1.setId("tx-001");
+        tx1.setCarId("car1");
+        tx1.setCustomerId("customer1");
+        tx1.setStatus("COMPLETED");
+        tx1.setPrice(200000);
+        tx1.setFinalPrice(200000);
+        tx1.setDate(new java.util.Date());
+
+        Transaction tx2 = new Transaction();
+        tx2.setId("tx-002");
+        tx2.setCarId("car1");
+        tx2.setCustomerId("customer1");
+        tx2.setStatus("PENDING");
+        tx2.setPrice(10000);
+        tx2.setDeposit(10000);
+        tx2.setDate(new java.util.Date());
+
+        when(transactionRepository.findAll()).thenReturn(java.util.Arrays.asList(tx1, tx2));
+        when(carRepository.findById("car1")).thenReturn(Optional.of(mockCar));
+        when(customerRepository.findById("customer1")).thenReturn(Optional.of(mockCustomer));
+
+        // 执行查询：精确匹配价格（预定状态的定金）
+        java.util.List<Transaction> result = transactionService.searchTransactions(
+            null, null, null, null, 10000, null, null
+        );
+
+        // 验证结果
+        assertEquals(1, result.size());
+        assertEquals("tx-002", result.get(0).getId());
+        assertEquals(10000, result.get(0).getDeposit());
+    }
+
+    @Test
+    void testSearchTransactions_WithDateRange() throws Exception {
+        // 准备测试数据
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
+        
+        Transaction tx1 = new Transaction();
+        tx1.setId("tx-001");
+        tx1.setCarId("car1");
+        tx1.setCustomerId("customer1");
+        tx1.setStatus("COMPLETED");
+        tx1.setDate(sdf.parse("2024-01-15"));
+
+        Transaction tx2 = new Transaction();
+        tx2.setId("tx-002");
+        tx2.setCarId("car1");
+        tx2.setCustomerId("customer1");
+        tx2.setStatus("PENDING");
+        tx2.setDate(sdf.parse("2024-02-20"));
+
+        when(transactionRepository.findAll()).thenReturn(java.util.Arrays.asList(tx1, tx2));
+        when(carRepository.findById("car1")).thenReturn(Optional.of(mockCar));
+        when(customerRepository.findById("customer1")).thenReturn(Optional.of(mockCustomer));
+
+        // 执行查询：日期范围筛选
+        java.util.List<Transaction> result = transactionService.searchTransactions(
+            null, null, null, null, null, "2024-02-01", "2024-02-28"
+        );
+
+        // 验证结果
+        assertEquals(1, result.size());
+        assertEquals("tx-002", result.get(0).getId());
+    }
+
+    @Test
+    void testSearchTransactions_NoResults() throws Exception {
+        // 准备测试数据
+        Transaction tx1 = new Transaction();
+        tx1.setId("tx-001");
+        tx1.setCarId("car1");
+        tx1.setCustomerId("customer1");
+        tx1.setStatus("COMPLETED");
+        tx1.setDate(new java.util.Date());
+
+        when(transactionRepository.findAll()).thenReturn(java.util.Arrays.asList(tx1));
+        when(carRepository.findById("car1")).thenReturn(Optional.of(mockCar));
+        when(customerRepository.findById("customer1")).thenReturn(Optional.of(mockCustomer));
+
+        // 执行查询：不存在的订单号
+        java.util.List<Transaction> result = transactionService.searchTransactions(
+            null, "tx-999", null, null, null, null, null
+        );
+
+        // 验证结果
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    void testSearchTransactions_AllConditionsNull() throws Exception {
+        // 准备测试数据
+        Transaction tx1 = new Transaction();
+        tx1.setId("tx-001");
+        tx1.setCarId("car1");
+        tx1.setCustomerId("customer1");
+        tx1.setStatus("COMPLETED");
+        tx1.setDate(new java.util.Date());
+
+        Transaction tx2 = new Transaction();
+        tx2.setId("tx-002");
+        tx2.setCarId("car1");
+        tx2.setCustomerId("customer1");
+        tx2.setStatus("PENDING");
+        tx2.setDate(new java.util.Date());
+
+        when(transactionRepository.findAll()).thenReturn(java.util.Arrays.asList(tx1, tx2));
+        when(carRepository.findById("car1")).thenReturn(Optional.of(mockCar));
+        when(customerRepository.findById("customer1")).thenReturn(Optional.of(mockCustomer));
+
+        // 执行查询：所有条件为空，应返回所有记录
+        java.util.List<Transaction> result = transactionService.searchTransactions(
+            null, null, null, null, null, null, null
+        );
+
+        // 验证结果
+        assertEquals(2, result.size());
+    }
+}
