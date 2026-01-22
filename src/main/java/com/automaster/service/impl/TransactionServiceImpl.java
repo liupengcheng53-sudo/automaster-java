@@ -6,6 +6,7 @@ import com.automaster.entity.Transaction;
 import com.automaster.repository.CarRepository;
 import com.automaster.repository.CustomerRepository;
 import com.automaster.repository.TransactionRepository;
+import com.automaster.repository.UserRepository;
 import com.automaster.service.TransactionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -24,15 +25,17 @@ public class TransactionServiceImpl implements TransactionService {
     private final TransactionRepository transactionRepository;
     private final CarRepository carRepository;
     private final CustomerRepository customerRepository;
+    private final UserRepository userRepository;
 
     // 构造器注入所有依赖
     @Autowired
     public TransactionServiceImpl(TransactionRepository transactionRepository,
                                   CarRepository carRepository,
-                                  CustomerRepository customerRepository) {
+                                  CustomerRepository customerRepository, UserRepository userRepository) {
         this.transactionRepository = transactionRepository;
         this.carRepository = carRepository;
         this.customerRepository = customerRepository;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -66,6 +69,17 @@ public class TransactionServiceImpl implements TransactionService {
         // 2. 校验客户是否存在
         if (!customerRepository.existsById(transaction.getCustomerId())) {
             throw new RuntimeException("关联客户不存在");
+        }
+
+        String handledByUserId = transaction.getHandledByUserId();
+        if (handledByUserId != null && !handledByUserId.trim().isEmpty()) {
+            // 传了值：校验该用户是否存在（必须是users表中有效的UUID）
+            if (!userRepository.existsById(handledByUserId.trim())) {
+                throw new RuntimeException("经手人ID不存在：" + handledByUserId);
+            }
+        } else {
+            // 没传值/空字符串：强制设为NULL（表结构允许NULL）
+            transaction.setHandledByUserId(null);
         }
 
         // 3. 自动设置交易日期（前端未传时）

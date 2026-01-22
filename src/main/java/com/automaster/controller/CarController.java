@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/cars")
 @Tag(name = "车辆管理接口", description = "二手车的新增、查询、修改、删除接口，包含VIN校验、状态筛选等扩展功能")
@@ -123,7 +125,9 @@ public class CarController {
             errorResponse.put("message", "预定状态必须填写有效定金金额");
             return ResponseEntity.badRequest().body(errorResponse);
         }
-
+        if (car.getCustomerId() == null || car.getCustomerId().trim().isEmpty()) {
+            car.setCustomerId(null); // 空字符串→NULL
+        }
         // 5. 正常保存
         Car savedCar = carRepository.save(car);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedCar);
