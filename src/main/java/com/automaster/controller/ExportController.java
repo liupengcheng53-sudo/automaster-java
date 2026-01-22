@@ -177,8 +177,8 @@ public class ExportController {
                 row.createCell(0).setCellValue(transaction.getId());
 
                 // 订单状态
-                String status = "PENDING".equals(transaction.getStatus()) ? "预定中" : "已完成";
-                row.createCell(1).setCellValue(status);
+                String statusText = "PENDING".equals(transaction.getStatus()) ? "预定中" : "已完成";
+                row.createCell(1).setCellValue(statusText);
 
                 // 车辆信息
                 Car car = carRepository.findById(transaction.getCarId()).orElse(null);

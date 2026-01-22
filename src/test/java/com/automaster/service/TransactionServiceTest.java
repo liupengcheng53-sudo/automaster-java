@@ -150,7 +150,6 @@ class TransactionServiceTest {
         verify(carRepository, times(1)).findById("car1");
         verify(transactionRepository, never()).save(any(Transaction.class));
     }
-}
 
     // ========== 查询功能测试 ==========
 
