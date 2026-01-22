@@ -159,9 +159,9 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public List<Transaction> searchTransactions(String status, String orderId, String carName,
-                                               String customerInfo, Integer price,
-                                               String startDate, String endDate) {
+    public List<Transaction> searchTransactions(String status, String orderId, String carName, 
+                                        String customerInfo, Integer price, 
+                                        String startDate, String endDate) {
         // 1. 查询所有交易记录
         List<Transaction> transactions = transactionRepository.findAll();
         
