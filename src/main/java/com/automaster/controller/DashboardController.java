@@ -61,4 +61,35 @@ public class DashboardController {
             return ResponseEntity.internalServerError().build();
         }
     }
+
+    /**
+     * 获取近半年销售趋势数据
+     * 
+     * @return 每月销售额列表
+     */
+    @GetMapping("/sales-trend")
+    @Operation(
+            summary = "获取近半年销售趋势",
+            description = "返回近6个月每月的销售额统计数据",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "查询成功",
+                            content = @Content
+                    ),
+                    @ApiResponse(
+                            responseCode = "500",
+                            description = "服务器内部错误",
+                            content = @Content
+                    )
+            }
+    )
+    public ResponseEntity<?> getSalesTrend() {
+        try {
+            return ResponseEntity.ok(dashboardService.getSalesTrend());
+        } catch (Exception e) {
+            log.error("获取销售趋势数据失败：", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 }

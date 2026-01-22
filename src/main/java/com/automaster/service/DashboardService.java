@@ -17,4 +17,12 @@ public interface DashboardService {
      * @return 仪表盘统计数据
      */
     DashboardStats getDashboardStats();
+    
+    /**
+     * 获取近半年销售趋势数据
+     * 返回近6个月每月的销售额统计
+     * 
+     * @return 每月销售额列表，格式：[{"name": "1月", "value": 120000}, ...]
+     */
+    java.util.List<java.util.Map<String, Object>> getSalesTrend();
 }

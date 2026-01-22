@@ -118,4 +118,69 @@ public class DashboardServiceImpl implements DashboardService {
 
         return stats;
     }
+
+    @Override
+    public java.util.List<java.util.Map<String, Object>> getSalesTrend() {
+        java.util.List<java.util.Map<String, Object>> result = new java.util.ArrayList<>();
+        
+        try {
+            // 获取当前日期
+            java.util.Calendar calendar = java.util.Calendar.getInstance();
+            
+            // 计算近6个月的销售额
+            for (int i = 5; i >= 0; i--) {
+                // 设置为 i 个月前
+                java.util.Calendar monthCal = (java.util.Calendar) calendar.clone();
+                monthCal.add(java.util.Calendar.MONTH, -i);
+                
+                // 获取月份名称（例如：1月、2月）
+                int month = monthCal.get(java.util.Calendar.MONTH) + 1; // 0-based
+                String monthName = month + "月";
+                
+                // 计算该月的开始和结束日期
+                java.util.Calendar startOfMonth = (java.util.Calendar) monthCal.clone();
+                startOfMonth.set(java.util.Calendar.DAY_OF_MONTH, 1);
+                startOfMonth.set(java.util.Calendar.HOUR_OF_DAY, 0);
+                startOfMonth.set(java.util.Calendar.MINUTE, 0);
+                startOfMonth.set(java.util.Calendar.SECOND, 0);
+                startOfMonth.set(java.util.Calendar.MILLISECOND, 0);
+                
+                java.util.Calendar endOfMonth = (java.util.Calendar) monthCal.clone();
+                endOfMonth.set(java.util.Calendar.DAY_OF_MONTH, endOfMonth.getActualMaximum(java.util.Calendar.DAY_OF_MONTH));
+                endOfMonth.set(java.util.Calendar.HOUR_OF_DAY, 23);
+                endOfMonth.set(java.util.Calendar.MINUTE, 59);
+                endOfMonth.set(java.util.Calendar.SECOND, 59);
+                endOfMonth.set(java.util.Calendar.MILLISECOND, 999);
+                
+                java.util.Date startDate = startOfMonth.getTime();
+                java.util.Date endDate = endOfMonth.getTime();
+                
+                // 查询该月的所有销售交易
+                List<Transaction> monthTransactions = transactionRepository.findAll().stream()
+                    .filter(tx -> tx != null 
+                        && "Sale".equals(tx.getType()) 
+                        && tx.getDate() != null
+                        && !tx.getDate().before(startDate) 
+                        && !tx.getDate().after(endDate))
+                    .toList();
+                
+                // 计算该月销售额
+                long monthRevenue = monthTransactions.stream()
+                    .mapToLong(tx -> tx.getPrice() != null ? tx.getPrice() : 0L)
+                    .sum();
+                
+                // 构造结果数据
+                java.util.Map<String, Object> monthData = new java.util.HashMap<>();
+                monthData.put("name", monthName);
+                monthData.put("value", monthRevenue);
+                result.add(monthData);
+            }
+            
+        } catch (Exception e) {
+            log.error("计算销售趋势数据失败：", e);
+            throw e;
+        }
+        
+        return result;
+    }
 }

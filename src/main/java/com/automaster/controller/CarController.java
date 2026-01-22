@@ -353,8 +353,10 @@ public class CarController {
                 return ResponseEntity.badRequest().body(Map.of("message", "请输入有效的最终成交价"));
             }
             
-            // 更新车辆状态为已售
+            // 更新车辆状态为已售，并清空预定信息
             car.setStatus("SOLD");
+            car.setCustomerId(null);  // 清空客户关联
+            car.setDeposit(0);        // 清空定金
             carRepository.save(car);
             
             // 创建交易记录
