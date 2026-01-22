@@ -82,4 +82,17 @@ public class User {
     @Column(name = "updated_at", nullable = false)
     @UpdateTimestamp
     private Date updatedAt;
+
+    @PrePersist // 插入数据库前执行
+    @PreUpdate  // 更新数据库前执行
+    public void setDefaultStatus() {
+        if (this.status == null) {
+            this.status = "ACTIVE";
+        }
+        if (this.role == null) {
+            this.role = "Sales";
+        }
+    }
+
+
 }
